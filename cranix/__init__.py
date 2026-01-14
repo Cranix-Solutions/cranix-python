@@ -1,24 +1,16 @@
-import json
-import os
-import sys
 import time
-import csv
 
 from typing import Set
 from configobj import ConfigObj
 
-from . import (_vars,
-               _functions)
+from . import _user_import
 
-from ._vars import (attr_ext_name,
-                    user_attributes)
+from ._vars import user_attributes
 
-from ._functions import (check_uid,
-                         check_password,
-                         read_birthday,
-                         print_error,
-                         print_msg,
-                         create_secure_pw)
+from ._functions import (print_error,
+                         print_msg)
+
+from ._init_functions import *
 
 # Internal debug only
 init_debug = False
@@ -58,147 +50,9 @@ for role in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/primary')
 
 
 """-----------------------SOME FUNCTIONS ARE NOW THERE SO THEY CAN BE USED IN INIT FUNCTION--------------------------"""
+"""--------AS SOON AS THE GLOBAL VARIABLES WILL BE REMOVED THIS FUNCTIONS CAN BE MOVED TO _init_functions.py---------"""
 
 
-def read_classes() -> list[str]:
-
-    classes = []
-    for group in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/class').readlines():
-        classes.append(group.strip().upper())
-
-    return classes
-
-def read_groups():
-
-    groups = []
-    for group in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/workgroups').readlines():
-        groups.append(group.strip().upper())
-
-    return groups
-
-all_groups.extend(read_groups())
-
-
-def read_users(role: str, identifier: str = "sn-gn-bd", debug: bool = False) -> Dict[str, Dict[str, Any]]:
-
-    all_users = {}
-
-    cmd = f'/usr/sbin/crx_api.sh GET users/byRole/{role}'
-    users_data = json.load(os.popen(cmd))
-
-    for user in users_data:
-
-        if identifier == "sn-gn-bd":
-            user_id = f"{user['surName'].upper()}-{user['givenName'].upper()}-{user['birthDay']}"
-        else:
-            user_id = str(user.get(identifier, "unknown"))
-
-        user_id = user_id.replace(' ', '_')
-        all_users[user_id] = dict(user)
-
-    if debug:
-        print("All existing users:")
-        print(all_users)
-
-    return all_users
-
-def build_user_id(user: dict, identifier: str) -> str:
-
-    if identifier == "sn-gn-bd":
-        uid = f"{user['surName']}-{user['givenName']}-{user['birthDay']}"
-
-    else:
-        uid = user.get(identifier, "")
-
-    return uid.upper().replace(" ", "_")
-
-def read_csv(path: str, identifier: str = "sn-gn-bd", debug: bool = False) -> dict:
-
-    users = {}
-
-    with open(path, newline='', encoding='utf-8') as csvfile:
-
-        dialect = csv.Sniffer().sniff(csvfile.readline())
-        csvfile.seek(0)
-
-        reader = csv.DictReader(csvfile, dialect=dialect)
-
-        for line_no, row in enumerate(reader, start=1):
-            user = {}
-
-            for key, value in row.items():
-                if not key:
-                    continue
-
-                try:
-                    user[attr_ext_name[key.upper()]] = value
-
-                except KeyError:
-                    continue
-
-            if 'birthDay' in user:
-                try:
-                    user['birthDay'] = read_birthday(user['birthDay'])
-
-                except ValueError:
-                    user['birthDay'] = ""
-
-            if 'uid' in user:
-                user['uid'] = user['uid'].lower()
-
-            user_id = build_user_id(user, identifier)
-            users[user_id] = user
-
-    return users
-
-
-def check_attributes(user, line_count):
-
-    if 'surName' not in user or 'givenName' not in user:
-        log_error('Missing required attributes in line {0}.'.format(line_count))
-        if debug:
-            print('Missing required attributes in line {0}.'.format(line_count))
-        return False
-    if user['surName'] == "" or user['givenName'] == "":
-        log_error('Required attributes are empty in line {0}.'.format(line_count))
-        if debug:
-            print('Required attributes are empty in line {0}.'.format(line_count))
-        return False
-    if identifier == "sn-gn-bd":
-        if 'birthDay' not in user or user['birthDay'] == '':
-            log_error('Missing birthday in line {0}.'.format(line_count))
-            if debug:
-                print('Missing birthday in line {0}.'.format(line_count))
-            return False
-    elif not identifier in user:
-        log_error('The line {0} does not contains the identifier {1}'.format(line_count,identifier))
-        if debug:
-            print('The line {0} does not contains the identifier {1}'.format(line_count,identifier))
-        return False
-    return True
-
-def log_debug(text, obj, debug=True):
-    if debug:
-        print(text)
-        print(obj)
-
-def close(check_password: bool):
-    if check_pw:
-        os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
-    else:
-        os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/no")
-    os.remove(lockfile)
-    log_msg("Import finished","OK")
-
-def close_on_error(msg, check_password: bool):
-    if check_pw:
-        os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
-    else:
-        os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/no")
-    os.remove(lockfile)
-    log_error(msg)
-    log_msg("Import finished","ERROR")
-    sys.exit(1)
 
 def prep_log_head():
     global new_users, del_users, moved_users, stand_users, new_groups, del_groups
@@ -433,171 +287,7 @@ def _write_user_list():
         os.system('/usr/sbin/crx_api.sh PATCH users/moveStudentsDevices')
 
 
-
-"""--------------------------------------------------NEW FUNCTIONS---------------------------------------------------"""
-
-
-
-def remove_unnececary_students(args):
-
-    if args.full and args.role == 'students':
-        for ident in all_users:
-            if not ident in import_list and not all_users[ident]['uid'] in protected_users:
-                del_users.add(ident)
-                log_msg(ident, "User will be deleted")
-                if not args.test:
-                    delete_user(all_users[ident]['uid'])
-
-def proceed_the_user_list(args):
-
-    for ident in import_list:
-        # First we proceed the classes
-
-        old_user = {}
-        new_user = import_list[ident]
-        new_user['role'] = args.role
-        old_classes = []
-        new_classes = []
-
-        if new_user['classes'].upper() == 'ALL':
-            new_classes = existing_classes
-        else:
-            new_classes = new_user['classes'].split()
-
-        if ident in all_users:
-
-            # It is an old user
-
-            old_user = all_users[ident]
-            log_debug("Old user", old_user)
-            new_user['id'] = old_user['id']
-            new_user['uid'] = old_user['uid']
-            old_classes = old_user['classes'].split(',')
-
-            if old_user['classes'] != new_user['classes']:
-                moved_users.add(ident)
-            else:
-                stand_users.add(ident)
-
-            log_debug("Old user", old_user)
-            log_msg(ident, "Old user. Old classes: " + old_user['classes'] + " New Classes:" + new_user['classes'])
-
-            if not args.test:
-                if args.resetPassword:
-
-                    password = args.password
-                    if 'password' in import_list[ident]:
-                        password = import_list[ident]['password']
-
-                    if password == "":
-                        password = create_secure_pw(8)
-
-                    if args.appendBirthdayToPassword:
-                        password = password + old_user['birthDay']
-
-                    if args.appendClassToPassword and len(new_classes) > 0:
-                        password = password + new_classes[0]
-
-                    old_user['password'] = password
-                    import_list[ident]['password'] = password
-                    old_user['mustChange'] = args.mustChange
-
-                modify_user(old_user, ident)
-        else:
-
-            new_users.add(ident)
-            log_debug("New user", new_user)
-            log_msg(ident, "New user. Classes:" + new_user['classes'])
-
-            if not args.test:
-                if not add_user(new_user, ident):
-                    continue
-
-            else:
-                # Test if uid and password are ok if given
-                if 'uid' in new_user:
-                    res = check_uid(new_user['uid'])
-                    if len(res) > 0:
-                        log_error(res)
-
-                if 'password' in new_user and new_user['password'] != "":
-                    res = check_password(new_user['password'])
-                    if len(res) > 0:
-                        log_error(res)
-
-        # trate classes
-        for cl in new_classes:
-            if cl == '' or cl.isspace():
-                continue
-            log_debug("  Class:", cl)
-            if cl not in required_classes:
-                required_classes.append(cl)
-
-            if cl not in existing_classes:
-                new_groups.add(cl)
-                log_msg(cl, "New class")
-
-                if not args.test:
-                    add_class(cl)
-
-        if not args.test:
-            move_user(new_user['uid'], old_classes, new_classes)
-
-        # trate groups
-        if 'group' in import_list[ident]:
-            for gr in import_list[ident]['group'].split():
-                if gr.upper() not in all_groups:
-
-                    new_groups.add(gr)
-                    log_msg(gr, "New group")
-
-                    if not args.test:
-                        add_group(gr)
-
-                log_msg(gr, "Add user to group")
-                if not args.test:
-
-                    cmd = '/usr/sbin/oss_api_text.sh PUT users/text/{0}/groups/{1}'.format(new_user['uid'], gr)
-                    if args.debug:
-                        print(cmd)
-                    result = os.popen(cmd).read()
-                    if args.debug:
-                        print(result)
-
-def _write_user_list(args):
-
-    if args.debug:
-
-        print('Resulted user list')
-        print(import_list)
-
-    if not args.test:
-        write_user_list()
-
-    if not args.test and args.cleanClassDirs:
-
-        for c in existing_classes:
-            os.system('/usr/sbin/crx_clean_group_directory.sh "{0}"'.format(c.upper()))
-
-def delete_unnecessary_classes(args):
-
-    if args.allClasses:
-
-        for c in existing_classes:
-            if not c in required_classes:
-
-                log_msg(c, "Class will be deleted")
-                del_groups.add(c)
-
-                if not args.test:
-                    delete_class(c)
-
-        read_classes()
-
-
-
 """--------------------------------------------------INIT FUNCTION---------------------------------------------------"""
-
 
 
 def init(args):
@@ -645,7 +335,7 @@ def init(args):
     import_list = read_csv(path=input_file, identifier="sn-gn-bd", debug=False)
 
     #FUCNTIONS FROM USERS IMPORT
-    remove_unnececary_students(args)
-    proceed_the_user_list(args)
-    write_user_list(args)
-    delete_unnecessary_classes(args)
+    _user_import.remove_unnececary_students(args)
+    _user_import.proceed_the_user_list(args)
+    _user_import.write_user_list(args)
+    _user_import.delete_unnecessary_classes(args)
