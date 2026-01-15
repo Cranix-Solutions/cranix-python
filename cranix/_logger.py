@@ -1,10 +1,13 @@
-import cranixconfig
+try:
+    import cranixconfig
+    debug = cranixconfig.CRANIX_DEBUG.lower() == "yes"
+except:
+    debug = True
 
 class Logger:
-    debug: bool = False
-    log_file
-    def __init__(self, logfile: str):
-        debug = cranixconfig.CRANIX_DEBUG.lower() == "yes"
+    log_file = ""
+    def __init__(self, logfile: str = '/tmp/cranix.log'):
+        global log_file
         log_file = open(logfile,"w")
 
     def debug(msg: str):

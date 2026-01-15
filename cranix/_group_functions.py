@@ -50,7 +50,7 @@ def delete_class(group):
     if debug:
         print(result)
 
-def read_classes() -> list[str]:
+def read_classes():
 
     classes = []
     for group in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/class').readlines():
