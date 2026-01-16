@@ -26,9 +26,10 @@ def add_user(user):
     with open(file_name, 'w') as fp:
         json.dump(user, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh users/insert ' + file_name))
+
     logger.debug(result)
-    if result['code'] == 'ERROR':
-        log_error(result['value'])
+    logger.error(result['value']) if result['code'] == 'ERROR' else ...
+
     return result
 
 def modify_user(user):
@@ -36,9 +37,10 @@ def modify_user(user):
     with open(file_name, 'w') as fp:
         json.dump(user, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh users/{0} "{1}" '.format(user['id'],file_name)))
+
     logger.debug(result)
-    if result['code'] == 'ERROR':
-        log_error(result['value'])
+    logger.error(result['value']) if result['code'] == 'ERROR' else ...
+
     return result
 
 def move_user(user, old_classes, new_classes, debug: bool = False, cleanClassDirs: bool = False):
@@ -69,11 +71,9 @@ def move_user(user, old_classes, new_classes, debug: bool = False, cleanClassDir
 
 def delete_user(user, debug: bool = False):
     cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}"'.format(user['uid'])
-    if debug:
-        print(cmd)
+    logger.debug(cmd)
     result = os.popen(cmd).read()
-    if debug:
-        print(result)
+    logger.debug(result)
 
 def build_user_id(user: dict, identifier: str) -> str:
 
@@ -94,15 +94,14 @@ def get_users(role: str, identifier: str = "sn-gn-bd", debug: bool = False) -> D
     try:
         users_data = json.load(os.popen(cmd))
     except:
+        logger.debug('Unable to get users data')
         pass
 
     for user in users_data:
         user_id = build_user_id(user, identifier)
         all_users[user_id] = dict(user)
 
-    if debug:
-        print("All existing users:")
-        print(all_users)
+    logger.debug(f'All existing users: {all_users}') if len(all_users) > 0 else logger.debug('No existing users')
 
     return all_users
 
@@ -120,7 +119,7 @@ def create_secure_pw(length: int = 10) -> str:
     pw_letters.insert(random.randint(0, num_letters + 1), random.choice(signs))
     return ''.join(pw_letters)
 
-def check_uid(uid: str):
+def check_uid(uid: str) -> str:
     if len(uid) < 2:
         return "UID must contains at last 2 characters"
     if len(uid) > 32:
@@ -136,7 +135,7 @@ def check_password(password):
     try:
         p = run("/usr/share/cranix/tools/check_password_complexity.sh", stdout=PIPE,  stderr=PIPE, input=password, encoding='ascii')
     except UnicodeEncodeError:
-        print("Password not ascii")
+        logger.error('Password not ascii')
     else:
         if p.stdout != "":
             (a,b) = p.stdout.split("##")

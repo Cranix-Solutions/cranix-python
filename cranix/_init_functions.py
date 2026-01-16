@@ -7,11 +7,14 @@ from ._vars import attr_ext_name
 
 from ._functions import read_birthday
 
+logger = Logger()
+
 def read_classes() -> list[str]:
 
     classes = []
     for group in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/class').readlines():
         classes.append(group.strip().upper())
+        logger.debug(f'Classes: {classes}')
 
     return classes
 
@@ -20,6 +23,7 @@ def read_groups():
     groups = []
     for group in os.popen('/usr/sbin/crx_api_text.sh GET groups/text/byType/workgroups').readlines():
         groups.append(group.strip().upper())
+        logger.debug(f'Groups: {groups}')
 
     return groups
 
@@ -43,9 +47,7 @@ def read_users(role: str, identifier: str = "sn-gn-bd", debug: bool = False) -> 
         user_id = user_id.replace(' ', '_')
         all_users[user_id] = dict(user)
 
-    if debug:
-        print("All existing users:")
-        print(all_users)
+    logger.debug(f"All existing users: {all_users}")
 
     return all_users
 
@@ -102,47 +104,36 @@ def read_csv(path: str, identifier: str = "sn-gn-bd", debug: bool = False) -> di
 def check_attributes(user, line_count):
 
     if 'surName' not in user or 'givenName' not in user:
-        log_error('Missing required attributes in line {0}.'.format(line_count))
-        if debug:
-            print('Missing required attributes in line {0}.'.format(line_count))
+        logger.error('Missing required attributes in line {0}.'.format(line_count))
         return False
     if user['surName'] == "" or user['givenName'] == "":
-        log_error('Required attributes are empty in line {0}.'.format(line_count))
-        if debug:
-            print('Required attributes are empty in line {0}.'.format(line_count))
-        return False
+        logger.error('Required attributes are empty in line {0}.'.format(line_count))
     if identifier == "sn-gn-bd":
         if 'birthDay' not in user or user['birthDay'] == '':
-            log_error('Missing birthday in line {0}.'.format(line_count))
-            if debug:
-                print('Missing birthday in line {0}.'.format(line_count))
+            logger.error('Missing birthday in line {0}.'.format(line_count))
             return False
     elif not identifier in user:
-        log_error('The line {0} does not contains the identifier {1}'.format(line_count,identifier))
-        if debug:
-            print('The line {0} does not contains the identifier {1}'.format(line_count,identifier))
+        logger.error('The line {0} does not contains the identifier {1}'.format(line_count,identifier))
         return False
     return True
 
-def log_debug(text, obj, debug=True):
-    if debug:
-        print(text)
-        print(obj)
+def log_debug(text, obj):
+    logger.debug(text + '\n' + obj)
 
-def close(check_password: bool):
+def close(check_pw: bool):
     if check_pw:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
     else:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/no")
     os.remove(lockfile)
-    log_msg("Import finished","OK")
+    logger.debug('Import finished')
 
-def close_on_error(msg, check_password: bool):
+def close_on_error(msg, check_pw: bool):
     if check_pw:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
     else:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/no")
     os.remove(lockfile)
-    log_error(msg)
+    logger.error(msg)
     log_msg("Import finished","ERROR")
     sys.exit(1)

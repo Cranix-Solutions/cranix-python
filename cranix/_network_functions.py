@@ -2,6 +2,8 @@ import netifaces
 from ipaddress import IPv4Interface
 from typing import List, Any
 
+logger = Logger()
+
 def network_to_netifaces():
     """Ermittelt die Netzwerke, zu denen jede Netzwerkschnittstelle gehört, mit netifaces."""
 
@@ -9,9 +11,14 @@ def network_to_netifaces():
 
     # 1. Liste aller Schnittstellennamen abrufen
     interfaces = netifaces.interfaces()
+
+    logger.debug(f"Interfaces: {interfaces}")
+    logger.error(f"No interfaces found") if len(interfaces) == 0 else ...
+
     for iface in interfaces:
         # 2. Adressen für die aktuelle Schnittstelle abrufen
         adressen = netifaces.ifaddresses(iface)
+        logger.debug(f"Adressen: {adressen}")
         # 3. Nur die Adressen der Familie AF_INET (IPv4) betrachten
         if iface.find(":") == -1 and netifaces.AF_INET in adressen:
 
@@ -32,6 +39,8 @@ def network_to_netifaces():
 
                         # Netzwerkadresse im CIDR-Format extrahieren
                         network = str(interface_obj.network)
+
+                        logger.debug(f"Network adress: {network}")
 
                         # Ergebnis speichern (ggf. mit Index, falls mehrere IPs pro NIC)
                         results[network] = {}
@@ -57,6 +66,7 @@ def get_default_gateway_interface():
     default_route = gateways.get('default', {}).get(netifaces.AF_INET)
 
     if default_route:
+        logger.debug(f"Default route: {default_route}")
         # default_route is a tuple: (gateway_ip, interface_name)
         return default_route[1]
 
@@ -67,8 +77,7 @@ def get_default_interface_ip():
     Finds the default network interface and returns its IPv4 address.
     """
     interface_name = get_default_gateway_interface()
-    if not interface_name:
-        return "No default route found."
+    logger.error("No default route found") if not interface_name else ...
 
 
     # Get addresses associated with the interface
@@ -79,6 +88,7 @@ def get_default_interface_ip():
 
     if ipv4_info:
         # ipv4_info is a list of dicts; usually the first one is the primary IP
+        logger.debug(f"IPv4: {ipv4_info}")
         return ipv4_info[0].get('addr')
 
     return None
@@ -92,8 +102,10 @@ def get_rooms() -> List[Any]:
     cmd = f'/usr/sbin/crx_api.sh GET rooms/all'
     try:
         rooms = json.load(os.popen(cmd))
+        logger.debug(f"Rooms: {rooms}")
     except:
         pass
+        logger.error(f"Unable to get rooms")
     return rooms
 
 # Usage
