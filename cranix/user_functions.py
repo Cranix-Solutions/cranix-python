@@ -6,15 +6,14 @@ import re
 import string
 
 try:
-    from _logger import Logger
+    from base import *
 except:
-    from . import _logger
-    from ._logger import Logger
+    from . import base
+    from base import *
 
 from typing import Dict, Any
 from subprocess import run, PIPE
 
-logger = Logger()
 valid_uid = re.compile(r"^[a-zA-Z0-9]+[a-zA-Z0-9\.\-\_]*[a-zA-Z0-9]$")
 
 
@@ -27,8 +26,8 @@ def add_user(user):
         json.dump(user, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh users/insert ' + file_name))
 
-    logger.debug(result)
-    logger.error(result['value']) if result['code'] == 'ERROR' else ...
+    debug(result)
+    error(result['value']) if result['code'] == 'ERROR' else ...
 
     return result
 
@@ -38,8 +37,8 @@ def modify_user(user):
         json.dump(user, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh users/{0} "{1}" '.format(user['id'],file_name)))
 
-    logger.debug(result)
-    logger.error(result['value']) if result['code'] == 'ERROR' else ...
+    debug(result)
+    error(result['value']) if result['code'] == 'ERROR' else ...
 
     return result
 
@@ -48,32 +47,32 @@ def move_user(user, old_classes, new_classes, debug: bool = False, cleanClassDir
     if not cleanClassDirs and user['role'] == 'students':
         if len(old_classes) > 0 and len(new_classes) > 0 and old_classes[0] != new_classes[0]:
             cmd = '/usr/share/cranix/tools/move_user_class_files.sh "{0}" "{1}" "{2}"'.format(uid,old_classes[0],new_classes[0])
-            logger.debug(cmd)
+            debug(cmd)
             result = os.popen(cmd).read()
-            logger.debug(result)
+            debug(result)
 
     for g in old_classes:
        if g == '' or g.isspace():
             continue
        if not g in new_classes:
            cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}/groups/{1}"'.format(uid,g)
-           logger.debug(cmd)
+           debug(cmd)
            result = os.popen(cmd).read()
-           logger.debug(result)
+           debug(result)
     for g in new_classes:
        if g == '' or g.isspace():
             continue
        if not g in old_classes:
            cmd = '/usr/sbin/crx_api_text.sh PUT "users/text/{0}/groups/{1}"'.format(uid,g)
-           logger.debug(cmd)
+           debug(cmd)
            result = os.popen(cmd).read()
-           logger.debug(result)
+           debug(result)
 
 def delete_user(user, debug: bool = False):
     cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}"'.format(user['uid'])
-    logger.debug(cmd)
+    debug(cmd)
     result = os.popen(cmd).read()
-    logger.debug(result)
+    debug(result)
 
 def build_user_id(user: dict, identifier: str) -> str:
 
@@ -94,14 +93,14 @@ def get_users(role: str, identifier: str = "sn-gn-bd", debug: bool = False) -> D
     try:
         users_data = json.load(os.popen(cmd))
     except:
-        logger.debug('Unable to get users data')
+        debug('Unable to get users data')
         pass
 
     for user in users_data:
         user_id = build_user_id(user, identifier)
         all_users[user_id] = dict(user)
 
-    logger.debug(f'All existing users: {all_users}') if len(all_users) > 0 else logger.debug('No existing users')
+    debug(f'All existing users: {all_users}') if len(all_users) > 0 else debug('No existing users')
 
     return all_users
 
@@ -135,7 +134,7 @@ def check_password(password):
     try:
         p = run("/usr/share/cranix/tools/check_password_complexity.sh", stdout=PIPE,  stderr=PIPE, input=password, encoding='ascii')
     except UnicodeEncodeError:
-        logger.error('Password not ascii')
+        error('Password not ascii')
     else:
         if p.stdout != "":
             (a,b) = p.stdout.split("##")
