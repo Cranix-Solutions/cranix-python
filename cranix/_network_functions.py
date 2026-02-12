@@ -1,8 +1,7 @@
 import netifaces
 from ipaddress import IPv4Interface
 from typing import List, Any
-
-logger = Logger()
+from .common import *
 
 def network_to_netifaces():
     """Ermittelt die Netzwerke, zu denen jede Netzwerkschnittstelle gehört, mit netifaces."""

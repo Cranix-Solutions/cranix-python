@@ -5,11 +5,7 @@ import random
 import re
 import string
 
-try:
-    from base import *
-except:
-    from . import base
-    from base import *
+from .common import *
 
 from typing import Dict, Any
 from subprocess import run, PIPE
@@ -42,7 +38,7 @@ def modify_user(user):
 
     return result
 
-def move_user(user, old_classes, new_classes, debug: bool = False, cleanClassDirs: bool = False):
+def move_user(user, old_classes, new_classes, cleanClassDirs: bool = False):
     uid = user['uid']
     if not cleanClassDirs and user['role'] == 'students':
         if len(old_classes) > 0 and len(new_classes) > 0 and old_classes[0] != new_classes[0]:
@@ -68,7 +64,7 @@ def move_user(user, old_classes, new_classes, debug: bool = False, cleanClassDir
            result = os.popen(cmd).read()
            debug(result)
 
-def delete_user(user, debug: bool = False):
+def delete_user(user):
     cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}"'.format(user['uid'])
     debug(cmd)
     result = os.popen(cmd).read()
@@ -84,19 +80,12 @@ def build_user_id(user: dict, identifier: str) -> str:
 
     return uid.upper().replace(" ", "_")
 
-def get_users(role: str, identifier: str = "sn-gn-bd", debug: bool = False) -> Dict[str, Dict[str, Any]]:
+def get_users(role: str, identifier: str = "sn-gn-bd") -> Dict[str, Dict[str, Any]]:
 
     all_users = {}
 
-    cmd = f'/usr/sbin/crx_api.sh GET users/byRole/{role}'
-    users_data = []
-    try:
-        users_data = json.load(os.popen(cmd))
-    except:
-        debug('Unable to get users data')
-        pass
-
-    for user in users_data:
+    user_data = api(f'users/byRole/{role}')
+    for user in user_data:
         user_id = build_user_id(user, identifier)
         all_users[user_id] = dict(user)
 
@@ -171,6 +160,7 @@ def read_birthday(bd: str) -> str:
 
 # Usage
 if __name__ == "__main__":
+    init()
     users = get_users('students')
     print('There are {0} students in the school'.format(len(users)))
     print('This is a secure password {0}'.format(create_secure_pw()))
