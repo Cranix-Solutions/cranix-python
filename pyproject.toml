@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cranix"
+dynamic = ["version"]
+description = "Common Python modules and native REST API client for CRANIX"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Peter Varkoly", email = "pvarkoly@cephalix.eu" },
+]
+requires-python = ">=3.11"
+dependencies = [
+    "requests",
+    "bashconfigparser",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+]
+
+[project.urls]
+Homepage = "https://github.com/Cranix-Solutions/cranix-python"
+
+[tool.setuptools.dynamic]
+version = { attr = "cranix._version.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["cranix*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
