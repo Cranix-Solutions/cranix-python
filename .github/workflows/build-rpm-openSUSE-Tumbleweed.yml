@@ -24,12 +24,9 @@ jobs:
         run: |
           zypper --non-interactive refresh
           zypper --non-interactive install -y \
-            python3 python3-pip python3-devel python3-setuptools python3-wheel \
+            python3 python3-devel python3-setuptools python3-wheel python3-pip \
+            python3-build python3-requests python3-bashconfigparser \
             rpm-build rsync gzip tar
-
-      - name: Install Python build tool
-        run: |
-          python3 -m pip install --upgrade pip build
 
       - name: Build Python wheel and sdist
         run: |
@@ -51,13 +48,14 @@ jobs:
             --exclude='.pytest_cache' \
             ./ "${SRC_DIR}/"
           tar -C /tmp -czf "/tmp/cranix-${VERSION}.tar.gz" "cranix-${VERSION}"
+          ls -l "/tmp/cranix-${VERSION}.tar.gz"
 
       - name: Create RPM spec
         run: |
           VERSION=$(tr -d '\n' < VERSION)
-          cat > /tmp/cranix.spec <<SPEC
+          cat > /tmp/cranix.spec <<'SPEC'
           Name:           cranix
-          Version:        ${VERSION}
+          Version:        %(cat /tmp/cranix-version.txt)
           Release:        1
           Summary:        Common Python modules for CRANIX/CEPHALIX
           License:        Other
@@ -88,16 +86,19 @@ jobs:
           %{python3_sitelib}/cranix-*.dist-info/
 
           %changelog
-          * $(date +"%a %b %d %Y") CI <ci@example.com> - %{version}-1
+          * %(date +"%a %b %d %Y") CI <ci@example.com> - %{version}-1
           - Automated RPM build for openSUSE Tumbleweed
           SPEC
-
-          mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-          cp /tmp/cranix-${VERSION}.tar.gz /root/rpmbuild/SOURCES/
-          cp /tmp/cranix.spec /root/rpmbuild/SPECS/
+          
+          # Store version for RPM spec macro expansion
+          tr -d '\n' < VERSION > /tmp/cranix-version.txt
 
       - name: Build RPM
         run: |
+          mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          VERSION=$(tr -d '\n' < VERSION)
+          cp "/tmp/cranix-${VERSION}.tar.gz" /root/rpmbuild/SOURCES/
+          cp /tmp/cranix.spec /root/rpmbuild/SPECS/
           rpmbuild -ba /root/rpmbuild/SPECS/cranix.spec
 
       - name: Upload RPM as workflow artifact
