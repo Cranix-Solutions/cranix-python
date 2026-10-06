@@ -1,0 +1,109 @@
+name: Build RPM Package for openSUSE Tumbleweed
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  rpm-build:
+    runs-on: ubuntu-latest
+    container:
+      image: opensuse/tumbleweed:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          zypper refresh
+          zypper install -y python3 python3-pip python3-devel python3-setuptools python3-wheel rpm-build rsync
+
+      - name: Install Python build tools
+        run: |
+          python3 -m pip install --upgrade pip build
+
+      - name: Build Python sdist and wheel
+        run: |
+          python3 -m build
+          ls -l dist
+
+      - name: Prepare source tarball for RPM build
+        run: |
+          VERSION=$(cat VERSION)
+          SRC_DIR="/tmp/cranix-${VERSION}"
+          rm -rf "${SRC_DIR}"
+          mkdir -p "${SRC_DIR}"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='dist' --exclude='build' --exclude='*.egg-info' --exclude='.pytest_cache' ./ "${SRC_DIR}/"
+          tar -C /tmp -czf "/tmp/cranix-${VERSION}.tar.gz" "cranix-${VERSION}"
+
+      - name: Create RPM spec
+        run: |
+          VERSION=$(cat VERSION)
+          cat > /tmp/cranix.spec <<SPEC
+          %define _unpackaged_files_terminate_build 0
+
+          Name:           cranix
+          Version:        ${VERSION}
+          Release:        1
+          Summary:        Common Python modules for CRANIX/CEPHALIX
+          License:        Other
+          URL:            https://github.com/Cranix-Solutions/cranix-python
+          Source0:        cranix-%{version}.tar.gz
+
+          BuildArch:      noarch
+          BuildRequires:  python3-devel python3-setuptools python3-wheel
+          Requires:       python3 >= 3.11
+          Requires:       python3-requests
+          Requires:       python3-bashconfigparser
+
+          %description
+          Common Python modules and native REST API client for CRANIX
+
+          %prep
+          %setup -q -n cranix-%{version}
+
+          %build
+          python3 -m build
+
+          %install
+          mkdir -p %{buildroot}%{python3_sitelib}
+          python3 -m pip install --no-deps --root=%{buildroot} dist/*.whl
+
+          %files
+          %{python3_sitelib}/cranix/
+          %{python3_sitelib}/cranix-*.dist-info/
+
+          %changelog
+          * $(date +"%a %b %d %Y") CI <ci@example.com> - %{version}-1
+          - Automated RPM build for openSUSE Tumbleweed
+          SPEC
+
+      - name: Build RPM
+        run: |
+          mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          cp /tmp/cranix.spec /root/rpmbuild/SPECS/
+          cp /tmp/cranix-$(cat VERSION).tar.gz /root/rpmbuild/SOURCES/
+          rpmbuild -ba /root/rpmbuild/SPECS/cranix.spec
+
+      - name: Upload RPM as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cranix-rpm-opensuse-tumbleweed
+          path: /root/rpmbuild/RPMS/noarch/*.rpm
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload RPM to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: /root/rpmbuild/RPMS/noarch/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
