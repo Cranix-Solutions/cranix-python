@@ -124,3 +124,15 @@ jobs:
           files: /usr/src/packages/RPMS/noarch/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy RPMs to Repository Server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.REPO_SERVER_URL }}
+          port: ${{ secrets.REPO_SERVER_PORT }}
+          username: github-deploy
+          key: ${{ secrets.REPO_SERVER_SSH_KEY }}
+          source: "/usr/src/packages/RPMS/noarch/*.rpm"
+          target: "/srv/www/repo/github"
+          # Do not use 'rm: true' as it would delete existing packages
+          overwrite: true
