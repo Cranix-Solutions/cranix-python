@@ -126,7 +126,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
-    needs: rpmbuild
+    needs: rpm-build
     runs-on: ubuntu-latest
     steps:
       - name: Download RPM artifacts
