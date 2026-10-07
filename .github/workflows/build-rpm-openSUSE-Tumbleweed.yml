@@ -98,15 +98,15 @@ jobs:
         run: |
           mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           VERSION=$(tr -d '\n' < VERSION)
-          cp "/tmp/cranix-${VERSION}.tar.gz" /root/rpmbuild/SOURCES/
-          cp /tmp/cranix.spec /root/rpmbuild/SPECS/
-          rpmbuild -ba /root/rpmbuild/SPECS/cranix.spec
+          cp "/tmp/cranix-${VERSION}.tar.gz" /usr/src/packages/SOURCES/
+          cp /tmp/cranix.spec /usr/src/packages/SPECS/
+          rpmbuild -ba /usr/src/packages/SPECS/cranix.spec
 
       - name: Upload RPM as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: cranix-rpm-opensuse-tumbleweed
-          path: /root/rpmbuild/RPMS/noarch/*.rpm
+          path: /usr/src/packages/RPMS/noarch/*.rpm
           if-no-files-found: error
           retention-days: 30
 
@@ -114,6 +114,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: /root/rpmbuild/RPMS/noarch/*.rpm
+          files: /usr/src/packages/RPMS/noarch/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
