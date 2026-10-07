@@ -65,7 +65,7 @@ jobs:
           Summary:        Common Python modules for CRANIX/CEPHALIX
           License:        Other
           URL:            https://github.com/Cranix-Solutions/cranix-python
-          Source0:        cranix-%{version}.tar.gz
+          Source0:        %{name}-%{version}.tar.gz
 
           BuildArch:      noarch
           BuildRequires:  python3-devel python3-setuptools python3-wheel
@@ -77,7 +77,7 @@ jobs:
           Common Python modules and native REST API client for CRANIX
 
           %prep
-          %setup -q -n cranix-%{version}
+          %setup -q -n %{name}-%{version}
 
           %build
           python3 -m build
