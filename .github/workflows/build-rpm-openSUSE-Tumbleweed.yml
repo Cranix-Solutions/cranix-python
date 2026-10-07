@@ -31,7 +31,7 @@ jobs:
           zypper --non-interactive install -y \
             python3 python3-devel python3-setuptools python3-wheel python3-pip \
             python3-build python3-requests python3-bashconfigparser \
-            rpm-build rsync gzip tar
+            rpm-build rsync gzip tar bash
 
       - name: Build Python wheel and sdist
         run: |
