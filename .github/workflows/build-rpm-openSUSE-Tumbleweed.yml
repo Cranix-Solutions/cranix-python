@@ -37,7 +37,8 @@ jobs:
       - name: Prepare source tarball for RPM build
         run: |
           VERSION=$(tr -d '\n' < VERSION)
-          SRC_DIR="/tmp/cranix-${VERSION}"
+          NAME="cranix-python"
+          SRC_DIR="/tmp/${NAME}-${VERSION}"
           rm -rf "${SRC_DIR}"
           mkdir -p "${SRC_DIR}"
           rsync -a \
@@ -48,59 +49,22 @@ jobs:
             --exclude='*.egg-info' \
             --exclude='.pytest_cache' \
             ./ "${SRC_DIR}/"
-          tar -C /tmp -czf "/tmp/cranix-${VERSION}.tar.gz" "cranix-${VERSION}"
-          ls -l "/tmp/cranix-${VERSION}.tar.gz"
+          tar -C /tmp -czf "/tmp/${NAME}-${VERSION}.tar.gz" "${NAME}-${VERSION}"
+          ls -l "/tmp/${NAME}-${VERSION}.tar.gz"
 
       - name: Create RPM spec
         run: |
+          NAME="cranix-python"
           VERSION=$(tr -d '\n' < VERSION)
-          cat > /tmp/cranix.spec <<'SPEC'
-          Name:           cranix
-          Version:        %(cat /tmp/cranix-version.txt)
-          Release:        1
-          Summary:        Common Python modules for CRANIX/CEPHALIX
-          License:        Other
-          URL:            https://github.com/Cranix-Solutions/cranix-python
-          Source0:        cranix-%{version}.tar.gz
-
-          BuildArch:      noarch
-          BuildRequires:  python3-devel python3-setuptools python3-wheel
-          Requires:       python3 >= 3.11
-          Requires:       python3-requests
-          Requires:       python3-bashconfigparser
-
-          %description
-          Common Python modules and native REST API client for CRANIX
-
-          %prep
-          %setup -q -n cranix-%{version}
-
-          %build
-          python3 -m build
-
-          %install
-          mkdir -p %{buildroot}%{python3_sitelib}
-          python3 -m pip install --no-deps --root=%{buildroot} --prefix=/usr dist/*.whl
-
-          %files
-          %{python3_sitelib}/cranix/
-          %{python3_sitelib}/cranix-*.dist-info/
-
-          %changelog
-          * %(date +"%a %b %d %Y") CI <ci@example.com> - %{version}-1
-          - Automated RPM build for openSUSE Tumbleweed
-          SPEC
-          
-          # Store version for RPM spec macro expansion
-          tr -d '\n' < VERSION > /tmp/cranix-version.txt
+          sed s/##VERSION##/${VERSION}/ ${NAME}.spec > /tmp/${NAME}.spec
 
       - name: Build RPM
         run: |
           mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           VERSION=$(tr -d '\n' < VERSION)
-          cp "/tmp/cranix-${VERSION}.tar.gz" /usr/src/packages/SOURCES/
-          cp /tmp/cranix.spec /usr/src/packages/SPECS/
-          rpmbuild -ba /usr/src/packages/SPECS/cranix.spec
+          cp "/tmp/${NAME}-${VERSION}.tar.gz" /usr/src/packages/SOURCES/
+          cp /tmp/${NAME}.spec /usr/src/packages/SPECS/
+          rpmbuild -ba /usr/src/packages/SPECS/${NAME}.spec
 
       - name: Upload RPM as workflow artifact
         uses: actions/upload-artifact@v4

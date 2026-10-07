@@ -10,12 +10,12 @@
 #
 
 Name:           python-cranix
-Version:        1.0.0
+Version:        ##VERSION##
 Release:        0
 Summary:        Common Python modules and native REST API client for CRANIX
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/Cranix-Solutions/cranix-python
-Source:         cranix-%{version}.tar.xz
+Source:         cranix-python-%{version}.tar.xz
 BuildRequires:  python-rpm-macros
 BuildRequires:  %{python_module pip}
 BuildRequires:  %{python_module setuptools}
@@ -29,7 +29,7 @@ Common Python modules and a native REST API client for the CRANIX.
 This package replaces the shell based crx_api helpers for Python code.
 
 %prep
-%autosetup -p1 -n cranix-%{version}
+%autosetup -p1 -n cranix-python-%{version}
 
 %build
 %pyproject_wheel
