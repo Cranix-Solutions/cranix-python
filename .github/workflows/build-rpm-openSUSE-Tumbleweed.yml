@@ -31,7 +31,7 @@ jobs:
           zypper --non-interactive install -y \
             python3 python3-devel python3-setuptools python3-wheel python3-pip \
             python3-build python3-requests python3-bashconfigparser \
-            rpm-build rsync gzip tar bash
+            rpm-build rsync gzip tar
 
       - name: Build Python wheel and sdist
         run: |
@@ -125,6 +125,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  deploy:
+    needs: rpmbuild
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download RPM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cranix-rpm-opensuse-tumbleweed
+          path: ./artifacts
+
       - name: Deploy RPMs to Repository Server
         uses: appleboy/scp-action@v1
         with:
@@ -132,7 +142,7 @@ jobs:
           port: ${{ secrets.REPO_SERVER_PORT }}
           username: github-deploy
           key: ${{ secrets.REPO_SERVER_SSH_KEY }}
-          source: "/usr/src/packages/RPMS/noarch/*.rpm"
+          source: "./artifacts/*.rpm"
           target: "/srv/www/repo/github"
           # Do not use 'rm: true' as it would delete existing packages
           overwrite: true
