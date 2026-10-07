@@ -1,9 +1,13 @@
 name: Build RPM package for openSUSE Tumbleweed
 
+#on:
+#  push:
+#    tags:
+#      - 'v*'
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -61,6 +65,7 @@ jobs:
       - name: Build RPM
         run: |
           mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          NAME="cranix-python"
           VERSION=$(tr -d '\n' < VERSION)
           cp "/tmp/${NAME}-${VERSION}.tar.gz" /usr/src/packages/SOURCES/
           cp /tmp/${NAME}.spec /usr/src/packages/SPECS/
