@@ -60,7 +60,44 @@ jobs:
         run: |
           NAME="cranix-python"
           VERSION=$(tr -d '\n' < VERSION)
-          sed s/##VERSION##/${VERSION}/ ${NAME}.spec > /tmp/${NAME}.spec
+          cat > /tmp/${NAME}.spec <<'SPEC'
+          Name:           cranix
+          Version:        %(cat /tmp/cranix-version.txt)
+          Release:        1
+          Summary:        Common Python modules for CRANIX/CEPHALIX
+          License:        Other
+          URL:            https://github.com/Cranix-Solutions/cranix-python
+          Source0:        cranix-%{version}.tar.gz
+
+          BuildArch:      noarch
+          BuildRequires:  python3-devel python3-setuptools python3-wheel
+          Requires:       python3 >= 3.11
+          Requires:       python3-requests
+          Requires:       python3-bashconfigparser
+
+          %description
+          Common Python modules and native REST API client for CRANIX
+
+          %prep
+          %setup -q -n cranix-%{version}
+
+          %build
+          python3 -m build
+
+          %install
+          mkdir -p %{buildroot}%{python3_sitelib}
+          python3 -m pip install --no-deps --root=%{buildroot} --prefix=/usr dist/*.whl
+
+          %files
+          %{python3_sitelib}/cranix/
+          %{python3_sitelib}/cranix-*.dist-info/
+
+          %changelog
+          * %(date +"%a %b %d %Y") CI <ci@example.com> - %{version}-1
+          - Automated RPM build for openSUSE Tumbleweed
+          SPEC
+
+# sed s/##VERSION##/${VERSION}/ ${NAME}.spec > /tmp/${NAME}.spec
 
       - name: Build RPM
         run: |
