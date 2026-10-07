@@ -54,7 +54,7 @@ if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: working tree has other uncommitted changes; only the version files will be committed." >&2
 fi
 
-echo "Setting version to $VERSION (assembly $ASSEMBLY_VERSION)"
+echo "Setting version to $VERSION"
 
 echo $VERSION > VERSION
 git commit -a -m "Release v$VERSION"
