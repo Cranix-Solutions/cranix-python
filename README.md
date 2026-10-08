@@ -62,6 +62,85 @@ user_id = api.user_id_by_uid("jdoe")
 role = api.user_role_by_uid("jdoe")
 ```
 
+## Managing users and groups
+
+The client exposes convenience methods for the most common CRUD operations.
+Every write method returns a `CrxResponse`; check `response.ok` or call
+`response.raise_for_status()` to turn errors into a `CrxApiError`.
+
+### Add a user
+
+```python
+from cranix import api
+
+client = api.CrxApi()
+
+user = {
+    "uid": "jdoe",
+    "givenName": "John",
+    "surName": "Doe",
+    "birthDay": "2000-01-02",
+    "role": "students",
+    "password": "change-me",
+    "fsQuota": 0,
+    "msQuota": 0,
+}
+
+response = client.add_user(user)
+if not response.ok:
+    raise RuntimeError(response.value)
+
+# CrxResponse carries the new object id and generated attributes.
+print(response.object_id, response.parameters)
+```
+
+### Add a group
+
+```python
+from cranix import api
+
+client = api.CrxApi()
+
+group = {
+    "name": "ROBOTICS",
+    "groupType": "workgroup",
+    "description": "Robotics club",
+}
+
+response = client.add_group(group)
+response.raise_for_status()
+```
+
+### Add a user to a group
+
+Group membership is addressed by group name and user uid:
+
+```python
+from cranix import api
+
+client = api.CrxApi()
+
+client.add_member("ROBOTICS", "jdoe").raise_for_status()
+client.remove_member("ROBOTICS", "jdoe").raise_for_status()
+```
+
+### Look up objects
+
+```python
+from cranix import api
+
+client = api.CrxApi()
+
+user = client.user_by_uid("jdoe")
+if user is not None:
+    print(user["id"], user["role"])
+
+group_id = client.group_id_by_name("ROBOTICS")
+
+for name in client.group_names_by_type("workgroups"):
+    print(name)
+```
+
 ## User import
 
 `cranix.user_import.Importer` implements the logic used by
