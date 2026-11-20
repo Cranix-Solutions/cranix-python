@@ -10,7 +10,7 @@
 #
 
 Name:           python-cranix
-Version:        ##VERSION##
+Version:        1.0.9
 Release:        0
 Summary:        Common Python modules and native REST API client for CRANIX
 License:        CC-BY-NC-ND-4.0
