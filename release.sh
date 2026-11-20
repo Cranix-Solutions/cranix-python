@@ -56,6 +56,9 @@ fi
 
 echo "Setting version to $VERSION"
 
+sed -i "s/^__version__ =.*$/__version__ = \"$VERSION\"/" cranix/_version.py
+sed -i "s/^Version: .*$/Version: $VERSION/" cranix.egg-info/PKG-INFO
+
 echo $VERSION > VERSION
 git commit -a -m "Release v$VERSION"
 git tag -a "v$VERSION" -m "Release v$VERSION"
