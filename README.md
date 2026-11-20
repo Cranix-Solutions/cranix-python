@@ -8,6 +8,9 @@ longer has to shell out to `crx_api.sh`, `crx_api_text.sh` or
 `cranix-ms365`, the user import logic and the Microsoft 365 synchronization
 helpers.
 
+## Build status
+[![build result](https://build.opensuse.org/projects/home:pvarkoly:CRANIX/packages/cranix-python/badge.svg?type=default)](https://build.opensuse.org/package/show/home:pvarkoly:CRANIX/cranix-python)
+
 ## Installation
 
 The package is built as the RPM `python313-cranix`:
