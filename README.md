@@ -5,8 +5,11 @@ Common Python modules for [CRANIX](https://github.com/Cranix-Solutions).
 The package provides a native REST client for the CRANIX API (so Python code no
 longer has to shell out to `crx_api.sh`, `crx_api_text.sh` or
 `crx_api_post_file.sh`), the shared helper functions used by `cranix-base` and
-`cranix-ms365`, the user import logic and the Microsoft 365 synchronization
-helpers.
+the user import logic.
+
+The Microsoft 365 synchronization helpers were split into the separate
+[cranix-python-ms365](https://github.com/Cranix-Solutions/cranix-python-ms365)
+repository and are provided by the `cranix_ms365` module.
 
 ## Build status
 [![build result](https://build.opensuse.org/projects/home:pvarkoly:CRANIX/packages/cranix-python/badge.svg?type=default)](https://build.opensuse.org/package/show/home:pvarkoly:CRANIX/cranix-python)
@@ -158,11 +161,15 @@ main()
 
 ## Microsoft 365
 
-```python
-from cranix import ms365
+The Microsoft 365 synchronization helpers are provided by the separate
+[cranix-python-ms365](https://github.com/Cranix-Solutions/cranix-python-ms365)
+package:
 
-ms365.read_token()
-ms_id = ms365.get_user_msid(user_id)
+```python
+import cranix_ms365
+
+cranix_ms365.read_token()
+ms_id = cranix_ms365.get_user_msid(user_id)
 ```
 
 ## License

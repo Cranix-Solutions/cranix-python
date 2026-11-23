@@ -6,8 +6,10 @@
 Common Python modules for CRANIX.
 
 The package provides a native REST client for the CRANIX API, the shared
-helper functions used by the CRANIX packages, the user import logic and the
-Microsoft 365 synchronization helpers.
+helper functions used by the CRANIX packages and the user import logic.
+
+The Microsoft 365 synchronization helpers live in the separate
+``cranix-python-ms365`` package (``cranix_ms365`` module).
 """
 
 from ._version import __version__
